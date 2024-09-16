@@ -1,8 +1,8 @@
 <template>
   <div class="flight-page">
     <div class="button-container">
-      <button class="action-button" @click="showAddFlightModal = true">Cadastrar Flight</button>
-      <button class="action-button" @click="listFlights">Verificar Flights</button>
+      <button class="action-button" @click="showAddFlightModal = true">Cadastrar Voo</button>
+      <button class="action-button" @click="listFlights">Verificar Voo</button>
     </div>
 
     <GenericForm
