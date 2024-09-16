@@ -28,8 +28,8 @@
             />
           </template>
         </div>
-        <button type="submit" class="form-button">Submit</button>
-        <button @click="closeModal" type="button" class="close-button">Close</button>
+        <button type="submit" class="form-button">Enviar</button>
+        <button @click="closeModal" type="button" class="close-button">Fechar</button>
       </form>
     </div>
   </div>

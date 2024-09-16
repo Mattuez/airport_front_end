@@ -10,6 +10,7 @@
         :showModal="showAddLocationModal"
         :fields="locationFields"
         :formData="newLocation"
+        :error-message="errorMessage"
         @close="showAddLocationModal = false"
         @submit="addLocation"
     />
@@ -32,6 +33,7 @@ import GenericList from "../components/GenericList.vue";
 const showAddLocationModal = ref(false);
 const newLocation = ref({ cep: '', city: '', state: '' });
 const locations = ref([]);
+const errorMessage = ref('');
 
 const locationFields = [
   {name: 'cep', label: 'CEP', placeholder: 'CEP'},
@@ -44,8 +46,13 @@ const addLocation = async (location) => {
     await axios.post('http://localhost:3000/locations', location);
     await listLocations();
     showAddLocationModal.value = false;
+    errorMessage.value = '';
   } catch (error) {
-    console.error('Error adding location:', error);
+    if (error.response && error.response.data) {
+      errorMessage.value = error.response.data.message || 'Erro ao adicionar o voo';
+    } else {
+      errorMessage.value = 'Erro desconhecido';
+    }
   }
 };
 

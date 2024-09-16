@@ -1,8 +1,8 @@
 <template>
   <div class="flight-page">
     <div class="button-container">
-      <button class="action-button" @click="showAddFlightModal = true">Cadastrar Voo</button>
-      <button class="action-button" @click="listFlights">Verificar Voo</button>
+      <button class="action-button" @click="openAddFlightModal">Cadastrar Flight</button>
+      <button class="action-button" @click="listFlights">Verificar Flights</button>
     </div>
 
     <GenericForm
@@ -11,8 +11,8 @@
         :fields="flightFields"
         :formData="newFlight"
         :errorMessage="errorMessage"
-        @close="showAddFlightModal = false"
-        @submit="handleAddFlight"
+        @close="closeFlightModal"
+        @submit="handleSubmitFlight"
     />
 
     <GenericList
@@ -20,6 +20,7 @@
         :items="flights"
         :headers="['Origem', 'Destino', 'Data']"
         :fieldMap="['source', 'destiny', 'date']"
+        @edit="editFlight"
     />
   </div>
 </template>
@@ -34,6 +35,8 @@ const showAddFlightModal = ref(false);
 const newFlight = ref({ sourceId: '', destinyId: '', date: '', time: '' });
 const flights = ref([]);
 const errorMessage = ref('');
+let isEditing = ref(false);
+let editingFlightId = ref(null);
 
 const flightFields = [
   { name: 'sourceId', label: 'Origem', placeholder: 'Selecione a origem', type: 'select', options: [] },
@@ -42,7 +45,28 @@ const flightFields = [
   { name: 'time', label: 'Hora', placeholder: 'Hora', type: 'time' }
 ];
 
-const handleAddFlight = () => {
+// Abre o modal de cadastro de voo, resetando o formulário
+const openAddFlightModal = () => {
+  newFlight.value = { sourceId: '', destinyId: '', date: '', time: '' }; // Reseta o formulário
+  isEditing.value = false;
+  showAddFlightModal.value = true;
+};
+
+// Função para editar um voo
+const editFlight = (flight) => {
+  newFlight.value = {
+    sourceId: flight.source_id,
+    destinyId: flight.destiny_id,
+    date: flight.date.split('T')[0],
+    time: flight.date.split('T')[1]
+  };
+  editingFlightId.value = flight.id;
+  isEditing.value = true;
+  showAddFlightModal.value = true; // Certifique-se de que o modal é aberto
+};
+
+// Função que lida com a submissão do formulário, diferenciando entre adicionar ou editar voo
+const handleSubmitFlight = () => {
   const { date, time } = newFlight.value;
   const dateTime = `${date}T${time}`;
 
@@ -53,9 +77,14 @@ const handleAddFlight = () => {
     destinyId: newFlight.value.destinyId
   };
 
-  addFlight(flightData);
+  if (isEditing.value) {
+    updateFlight(flightData);
+  } else {
+    addFlight(flightData);
+  }
 };
 
+// Função para adicionar um voo
 const addFlight = async (flight) => {
   try {
     await axios.post('http://localhost:3000/flights', {
@@ -67,18 +96,28 @@ const addFlight = async (flight) => {
     showAddFlightModal.value = false;
     errorMessage.value = ''; // Limpar mensagem de erro
   } catch (error) {
-    if (error.response && error.response.data) {
-      errorMessage.value = error.response.data.message || 'Erro ao adicionar o voo';
-    } else {
-      errorMessage.value = 'Erro desconhecido';
-    }
+    errorMessage.value = error.response?.data?.message || 'Erro ao adicionar o voo';
   }
 };
 
+// Função para atualizar um voo
+const updateFlight = async (flight) => {
+  try {
+    await axios.put(`http://localhost:3000/flights/${editingFlightId.value}`, flight);
+    await listFlights();
+    showAddFlightModal.value = false;
+    errorMessage.value = ''; // Limpar mensagem de erro
+  } catch (error) {
+    errorMessage.value = error.response?.data?.message || 'Erro ao atualizar o voo';
+  }
+};
+
+// Função para listar os voos
 const listFlights = async () => {
   try {
     const response = await axios.get('http://localhost:3000/flights');
     flights.value = response.data.map(flight => ({
+      id: flight.id, // Adicionando o ID necessário para edição
       source: `${flight.source.city} - ${flight.source.state} (${flight.source.cep})`,
       destiny: `${flight.destiny.city} - ${flight.destiny.state} (${flight.destiny.cep})`,
       date: flight.date
@@ -88,6 +127,7 @@ const listFlights = async () => {
   }
 };
 
+// Carrega as opções de origem e destino
 const fetchLocations = async () => {
   try {
     const response = await axios.get('http://localhost:3000/locations');
@@ -105,13 +145,18 @@ const fetchLocations = async () => {
   }
 };
 
+// Fecha o modal de voo
+const closeFlightModal = () => {
+  showAddFlightModal.value = false;
+  errorMessage.value = '';
+};
+
+// Monta o componente, carregando as localizações e os voos
 onMounted(() => {
   fetchLocations();
   listFlights();
 });
 </script>
-
-
 
 <style scoped>
 .flight-page {
